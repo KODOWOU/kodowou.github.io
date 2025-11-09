@@ -25,14 +25,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
-          cache-dependency-path: yarn.lock
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile || yarn install
+        run: yarn install --non-interactive || npm ci
 
       - name: Build
-        run: yarn build
+        run: yarn build || npm run build
 
       - name: Add SPA fallback (404.html)
         run: cp dist/index.html dist/404.html
