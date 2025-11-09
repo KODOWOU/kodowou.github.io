@@ -21,29 +21,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect workdir (root or ./frontend)
+        run: |
+          if [ -f package.json ]; then
+            echo "WORKDIR=." >> $GITHUB_ENV
+          elif [ -f frontend/package.json ]; then
+            echo "WORKDIR=frontend" >> $GITHUB_ENV
+          else
+            echo "No package.json found at root or ./frontend" >&2
+            exit 1
+          fi
+          echo "Using WORKDIR=$WORKDIR"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: yarn
-          cache-dependency-path: frontend/yarn.lock
+          cache-dependency-path: ${{ env.WORKDIR }}/yarn.lock
 
       - name: Install dependencies
-        working-directory: frontend
-        run: yarn install --frozen-lockfile
+        working-directory: ${{ env.WORKDIR }}
+        run: yarn install
 
       - name: Build
-        working-directory: frontend
+        working-directory: ${{ env.WORKDIR }}
         run: yarn build
 
       - name: Add SPA fallback (404.html)
-        working-directory: frontend/dist
-        run: cp index.html 404.html
+        run: cp ${{ env.WORKDIR }}/dist/index.html ${{ env.WORKDIR }}/dist/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: ${{ env.WORKDIR }}/dist
 
   deploy:
     environment:
