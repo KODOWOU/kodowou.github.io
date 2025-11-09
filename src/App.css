@@ -1,0 +1,4 @@
+.container { max-width: 1080px; }
+.nav-link { @apply text-white/90 hover:text-white transition-colors; }
+.active-link { @apply text-white font-semibold; }
+.card { @apply bg-white shadow-sm rounded-lg border border-gray-200; }
