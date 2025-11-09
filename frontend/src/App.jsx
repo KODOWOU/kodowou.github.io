@@ -57,7 +57,7 @@ function Contact() {
 
 function CV() {
   const [view, setView] = useState('web');
-  const backendUrl = useMemo(() => import.meta.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL, []);
+  const backendUrl = useMemo(() => (import.meta.env && import.meta.env.REACT_APP_BACKEND_URL) || undefined, []);
   const [apiOk, setApiOk] = useState(null);
   useEffect(() => {
     if (!backendUrl) return; // respect env-only rule
