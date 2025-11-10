@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
+import { marked } from 'marked';
 
 function Layout({ children }) {
   const location = useLocation();
@@ -13,6 +14,7 @@ function Layout({ children }) {
           <div className="flex items-center gap-6">
             <NavLink to="/" end className={({isActive}) => `nav-link ${isActive ? 'active-link' : ''}`} data-testid="nav-home">Home</NavLink>
             <NavLink to="/recherche" className={({isActive}) => `nav-link ${isActive ? 'active-link' : ''}`} data-testid="nav-recherche">Recherche</NavLink>
+            <NavLink to="/projets" className={({isActive}) => `nav-link ${isActive ? 'active-link' : ''}`} data-testid="nav-projets">Projets</NavLink>
             <NavLink to="/contact" className={({isActive}) => `nav-link ${isActive ? 'active-link' : ''}`} data-testid="nav-contact">Contact</NavLink>
             <NavLink to="/cv" className={({isActive}) => `nav-link ${isActive ? 'active-link' : ''}`} data-testid="nav-cv">CV</NavLink>
           </div>
@@ -26,20 +28,82 @@ function Layout({ children }) {
   );
 }
 
+function Section({ title, children }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-2xl font-semibold">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
 function Home() {
   return (
-    <div className="space-y-6" data-testid="home-page">
+    <div className="space-y-10" data-testid="home-page">
       <h1 className="text-3xl font-bold">Home</h1>
-      <p className="text-gray-700">Cette page remplace l’onglet Biographie. Aucun message de bienvenue n’est affiché.</p>
+
+      <Section title="Réflexion">
+        <p className="text-gray-700">Écrivez ici vos réflexions personnelles (support texte simple). Vous pourrez enrichir plus tard avec du markdown.</p>
+      </Section>
+
+      <Section title="Mes lectures">
+        <p className="text-gray-700">Ajoutez ici des notes de lecture, résumés d’articles, livres, etc.</p>
+      </Section>
     </div>
   );
 }
 
 function Recherche() {
+  const [files, setFiles] = useState([]);
+  useEffect(() => {
+    // Les PDF ajoutés dans /public/recherche/ seront listés ici
+    fetch('/recherche/index.json').then(r => r.json()).then(setFiles).catch(() => setFiles([]));
+  }, []);
   return (
     <div className="space-y-6" data-testid="recherche-page">
       <h1 className="text-3xl font-bold">Recherche</h1>
-      <p className="text-gray-700">Ajoutez ici vos travaux de recherche, publications, working papers, etc.</p>
+      {files.length === 0 ? (
+        <p className="text-gray-700">Ajoutez vos PDF dans public/recherche/ et mettez à jour public/recherche/index.json</p>
+      ) : (
+        <ul className="space-y-3">
+          {files.map((f) => (
+            <li key={f.path} className="card p-4 flex items-center justify-between">
+              <div>
+                <p className="font-medium">{f.title}</p>
+                <p className="text-sm text-gray-500">{f.description}</p>
+              </div>
+              <a className="text-blue-600 underline" href={f.path} target="_blank" rel="noreferrer" data-testid={`recherche-item-${f.title}`}>Ouvrir</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Projets() {
+  const [files, setFiles] = useState([]);
+  useEffect(() => {
+    fetch('/projets/index.json').then(r => r.json()).then(setFiles).catch(() => setFiles([]));
+  }, []);
+  return (
+    <div className="space-y-6" data-testid="projets-page">
+      <h1 className="text-3xl font-bold">Projets</h1>
+      {files.length === 0 ? (
+        <p className="text-gray-700">Ajoutez vos PDF de projets dans public/projets/ et mettez à jour public/projets/index.json</p>
+      ) : (
+        <ul className="space-y-3">
+          {files.map((f) => (
+            <li key={f.path} className="card p-4 flex items-center justify-between">
+              <div>
+                <p className="font-medium">{f.title}</p>
+                <p className="text-sm text-gray-500">{f.description}</p>
+              </div>
+              <a className="text-blue-600 underline" href={f.path} target="_blank" rel="noreferrer" data-testid={`projet-item-${f.title}`}>Ouvrir</a>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -56,44 +120,15 @@ function Contact() {
 }
 
 function CV() {
-  const [view, setView] = useState('web');
-  const backendUrl = useMemo(() => (import.meta.env && import.meta.env.REACT_APP_BACKEND_URL) || undefined, []);
-  const [apiOk, setApiOk] = useState(null);
-  useEffect(() => {
-    if (!backendUrl) return; // respect env-only rule
-    fetch(`${backendUrl}/api/health`).then(r => r.json()).then(() => setApiOk(true)).catch(() => setApiOk(false));
-  }, [backendUrl]);
-
   return (
     <div className="space-y-6" data-testid="cv-page">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">CV</h1>
         <a href="/cv.pdf" download className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700" data-testid="cv-download-button">Télécharger le PDF</a>
       </div>
-
-      <div className="inline-flex rounded-md border bg-white" role="tablist" data-testid="cv-view-toggle">
-        <button onClick={() => setView('web')} className={`px-4 py-2 ${view==='web' ? 'bg-blue-50 text-blue-700' : ''}`} data-testid="cv-view-web">Version web</button>
-        <button onClick={() => setView('pdf')} className={`px-4 py-2 border-l ${view==='pdf' ? 'bg-blue-50 text-blue-700' : ''}`} data-testid="cv-view-pdf">Lecteur PDF</button>
+      <div className="card p-0 overflow-hidden" data-testid="cv-pdf-viewer">
+        <iframe title="cv-pdf" src="/cv.pdf#view=FitH" className="w-full h-[80vh]" />
       </div>
-
-      {view === 'web' ? (
-        <div className="card p-6" data-testid="cv-web">
-          <p className="text-gray-700">Ci-dessous, un aperçu en ligne de votre CV à partir du fichier stocké dans le dépôt. Pour une mise en page fidèle, utilisez l’onglet «Lecteur PDF» ou téléchargez le fichier.</p>
-          <div className="mt-6 aspect-[8.5/11] bg-gray-100 border border-dashed grid place-items-center text-gray-500">
-            <span data-testid="cv-web-placeholder">Version web simplifiée du CV</span>
-          </div>
-        </div>
-      ) : (
-        <div className="card p-0 overflow-hidden" data-testid="cv-pdf-viewer">
-          <iframe title="cv-pdf" src="/cv.pdf#view=FitH" className="w-full h-[80vh]" />
-        </div>
-      )}
-
-      {apiOk === false && (
-        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3" data-testid="backend-warning">
-          Le backend n’est pas joignable pour l’instant (vérification /api/health). Ce site peut néanmoins fonctionner sans.
-        </div>
-      )}
     </div>
   );
 }
@@ -104,6 +139,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/recherche" element={<Recherche />} />
+        <Route path="/projets" element={<Projets />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/cv" element={<CV />} />
       </Routes>
