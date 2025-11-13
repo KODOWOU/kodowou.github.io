@@ -43,17 +43,38 @@ function Home() {
   );
 }
 
-function ListFromJson({ title, basePath }) {
+function useJsonList(basePath) {
   const [files, setFiles] = useState([]);
+  const [error, setError] = useState(null);
   useEffect(() => {
-    fetch(`${basePath}/index.json?_=${Date.now()}`)
-      .then(r => r.json())
-      .then(setFiles)
-      .catch(() => setFiles([]));
+    const url = `${basePath}/index.json?_=${Date.now()}`; // cache-buster
+    fetch(url)
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const txt = await r.text();
+        try {
+          const data = JSON.parse(txt);
+          if (Array.isArray(data)) setFiles(data);
+          else if (data && typeof data === 'object') setFiles([data]);
+          else setFiles([]);
+        } catch(e) {
+          setError('JSON invalide');
+          setFiles([]);
+        }
+      })
+      .catch((e) => { setError(e.message); setFiles([]); });
   }, [basePath]);
+  return { files, error };
+}
+
+function ListFromJson({ title, basePath }) {
+  const { files, error } = useJsonList(basePath);
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">{title}</h1>
+      {error && (
+        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">Erreur de lecture: {error}</div>
+      )}
       {files.length === 0 ? (
         <p className="text-gray-700">Ajoutez vos PDF dans public{basePath}/ et mettez à jour public{basePath}/index.json</p>
       ) : (

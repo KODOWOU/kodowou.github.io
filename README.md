@@ -1,18 +1,22 @@
-# kodowou.github.io — Nouveau site
+Mode d’emploi pour gérer le site (sans serveur)
 
-Ce dépôt contient le code source du site personnel (React + Vite + Tailwind) et le workflow GitHub Pages.
+1) Où mettre les fichiers
+- CV: public/cv.pdf
+- Recherche: public/recherche/ + public/recherche/index.json
+- Projets: public/projets/ + public/projets/index.json
 
-## Déploiement (vous n’avez qu’à pousser)
-1. Assurez-vous que ce dossier contient:
-   - dossier `frontend/` (code React)
-   - `.github/workflows/deploy.yml` (déploiement automatique)
-2. Remplacez `frontend/public/cv.pdf` par votre CV si besoin.
-3. Poussez sur `main`.
-4. GitHub Actions va:
-   - installer les dépendances
-   - construire le site (`frontend/dist`)
-   - copier `index.html` en `404.html` (fallback SPA)
-   - déployer sur GitHub Pages
-5. Accédez ensuite à: https://kodowou.github.io/
+2) Format de index.json
+- Tableau d’objets: title, description, path (path commence par /recherche/… ou /projets/…)
+Exemple:
+[
+  { "title": "Mon article", "description": "Brève description", "path": "/recherche/mon-article.pdf" },
+  { "title": "Autre", "description": "…", "path": "/recherche/autre.pdf" }
+]
 
-Aucune configuration serveur n’est requise.
+3) Étapes
+- Ajouter le PDF au bon dossier
+- Mettre à jour l’index.json correspondant
+- git add . && git commit -m "maj contenu" && git push origin main
+- Attendre 1–2 minutes puis rafraîchir le site
+
+Note: Les anciens dossiers sous frontend/ ne sont pas utilisés pour le déploiement. Utiliser uniquement les dossiers à la racine (public/, src/, …).
