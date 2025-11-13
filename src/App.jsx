@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
+import { marked } from 'marked';
 
 function Layout({ children }) {
   const location = useLocation();
@@ -27,17 +28,76 @@ function Layout({ children }) {
   );
 }
 
+function useMarkdown(path) {
+  const [html, setHtml] = useState('');
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    fetch(`${path}?_=${Date.now()}`)
+      .then(async r => {
+        if (!r.ok) { setMissing(true); return; }
+        const txt = await r.text();
+        setHtml(marked.parse(txt));
+      })
+      .catch(() => setMissing(true));
+  }, [path]);
+  return { html, missing };
+}
+
 function Home() {
+  // Mise en page style Eric Roca: colonne gauche (avatar + infos), droite (about + intérêts)
+  const about = useMarkdown('/contenu/about.md');
+  const reflexion = useMarkdown('/contenu/reflexion.md');
+  const lectures = useMarkdown('/contenu/mes-lectures.md');
   return (
     <div className="space-y-10" data-testid="home-page">
-      <h1 className="text-3xl font-bold">Home</h1>
-      <section className="space-y-3">
-        <h2 className="text-2xl font-semibold">Réflexion</h2>
-        <p className="text-gray-700">Zone de texte libre. Vous pourrez écrire ici vos réflexions.</p>
+      <div className="hero">
+        <div className="space-y-4">
+          <div className="avatar" data-testid="home-avatar">K A</div>
+          <div>
+            <h1 className="text-3xl font-bold" data-testid="home-name">Kodjo Anthelme Kodowou</h1>
+            <p className="text-gray-600">Étudiant en Économie / Ingénierie Financière</p>
+            <ul className="info-list mt-3">
+              <li>Université / Établissement (à préciser)</li>
+              <li>Email: contact@example.com</li>
+            </ul>
+          </div>
+        </div>
+        <div className="space-y-8">
+          <section>
+            <h2 className="section-title">À propos de moi</h2>
+            {about.missing ? (
+              <p className="text-gray-700">Ajoutez un fichier public/contenu/about.md pour afficher votre biographie.</p>
+            ) : (
+              <div dangerouslySetInnerHTML={{ __html: about.html }} data-testid="home-about" />
+            )}
+          </section>
+          <section>
+            <h3 className="font-semibold">Intérêts</h3>
+            <ul className="list-disc pl-6 text-gray-700">
+              <li>Développement économique</li>
+              <li>Finance quantitative</li>
+              <li>Économie des familles</li>
+            </ul>
+          </section>
+        </div>
+      </div>
+
+      <section>
+        <h2 className="section-title">Réflexion</h2>
+        {reflexion.missing ? (
+          <p className="text-gray-700">Créez public/contenu/reflexion.md pour écrire vos réflexions.</p>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: reflexion.html }} data-testid="home-reflexion" />
+        )}
       </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl font-semibold">Mes lectures</h2>
-        <p className="text-gray-700">Zone de texte libre pour notes de lecture.</p>
+
+      <section>
+        <h2 className="section-title">Mes lectures</h2>
+        {lectures.missing ? (
+          <p className="text-gray-700">Créez public/contenu/mes-lectures.md pour vos notes de lecture.</p>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: lectures.html }} data-testid="home-lectures" />
+        )}
       </section>
     </div>
   );

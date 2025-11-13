@@ -2,3 +2,7 @@
 .nav-link { @apply text-white/90 hover:text-white transition-colors; }
 .active-link { @apply text-white font-semibold; }
 .card { @apply bg-white shadow-sm rounded-lg border border-gray-200; }
+.hero { @apply grid md:grid-cols-[260px_1fr] gap-8 items-start; }
+.avatar { @apply w-48 h-48 rounded-full bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-500; }
+.info-list { @apply text-sm text-gray-600 space-y-1; }
+.section-title { @apply text-2xl font-semibold; }
