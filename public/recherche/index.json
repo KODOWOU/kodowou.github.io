@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "title": "Effets des chocs pétroliers sur la croissance",
+    "description": "Working paper – séries temporelles 1990–2024.",
+    "path": "/recherche/parcours-ifm.pdf",
+    "category": "working_papers",
+    "date": "2025-11-09"
+  },
+  {
+    "title": "Inégalités et investissement éducatif",
+    "description": "Article – version préliminaire.",
+    "path": "/recherche/inegalites-investissement-educatif.pdf",
+    "category": "publies",
+    "date": "2025-10-15"
+  },
+  {
+    "title": "Effets des chocs pétroliers sur la croissance (étudiant)",
+    "description": "Note de travail d’étudiant.",
+    "path": "/recherche/parcours-ifm.pdf",
+    "category": "etudiants",
+    "date": "2025-09-01"
+  }
+]
