@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import { marked } from 'marked';
@@ -44,7 +44,6 @@ function useMarkdown(path) {
 }
 
 function Home() {
-  // Mise en page style Eric Roca: colonne gauche (avatar + infos), droite (about + intérêts)
   const about = useMarkdown('/contenu/about.md');
   const reflexion = useMarkdown('/contenu/reflexion.md');
   const lectures = useMarkdown('/contenu/mes-lectures.md');
@@ -103,8 +102,24 @@ function Home() {
   );
 }
 
+function normalizePath(p) {
+  if (!p) return '#';
+  if (/^https?:\/\//.test(p)) return p; // URL absolue
+  let out = p.trim();
+  if (out.startsWith('public/')) out = out.substring('public/'.length);
+  if (out.startsWith('/public/')) out = out.substring('/public'.length);
+  if (!out.startsWith('/')) out = '/' + out;
+  // supprimer doubles slashs (sauf https://)
+  out = out.replace(/(^|[^:])\/\/+/, '$1/');
+  return out;
+}
+
+function formatDate(d) {
+  try { return new Date(d).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: '2-digit' }); } catch { return null; }
+}
+
 function useJsonList(basePath) {
-  const [files, setFiles] = useState([]);
+  const [items, setItems] = useState([]);
   const [error, setError] = useState(null);
   useEffect(() => {
     const url = `${basePath}/index.json?_=${Date.now()}`; // cache-buster
@@ -112,40 +127,99 @@ function useJsonList(basePath) {
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const txt = await r.text();
-        try {
-          const data = JSON.parse(txt);
-          if (Array.isArray(data)) setFiles(data);
-          else if (data && typeof data === 'object') setFiles([data]);
-          else setFiles([]);
-        } catch(e) {
-          setError('JSON invalide');
-          setFiles([]);
-        }
+        const data = JSON.parse(txt);
+        const arr = Array.isArray(data) ? data : (data ? [data] : []);
+        const normalized = arr.map((x, idx) => ({
+          title: x.title || `Élément ${idx+1}`,
+          description: x.description || '',
+          path: normalizePath(x.path),
+          date: x.date || x.added_at || null,
+          category: x.category || 'autres',
+        }));
+        setItems(normalized);
       })
-      .catch((e) => { setError(e.message); setFiles([]); });
+      .catch((e) => { setError(e.message); setItems([]); });
   }, [basePath]);
-  return { files, error };
+  return { items, error };
 }
 
-function ListFromJson({ title, basePath }) {
-  const { files, error } = useJsonList(basePath);
+function Recherche() {
+  const { items, error } = useJsonList('/recherche');
+  const groups = useMemo(() => {
+    const order = ['etudiants', 'working_papers', 'publies', 'autres'];
+    const labels = {
+      etudiants: 'Travaux étudiants',
+      working_papers: 'Working papers',
+      publies: 'Articles publiés',
+      autres: 'Autres',
+    };
+    const m = {};
+    for (const it of items) {
+      const k = order.includes(it.category) ? it.category : 'autres';
+      if (!m[k]) m[k] = [];
+      m[k].push(it);
+    }
+    for (const k of Object.keys(m)) {
+      m[k].sort((a,b)=> new Date(b.date||0) - new Date(a.date||0));
+    }
+    return { order, labels, m };
+  }, [items]);
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">{title}</h1>
+    <div className="space-y-8" data-testid="recherche-page">
+      <h1 className="text-3xl font-bold">Recherche</h1>
       {error && (
         <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">Erreur de lecture: {error}</div>
       )}
-      {files.length === 0 ? (
-        <p className="text-gray-700">Ajoutez vos PDF dans public{basePath}/ et mettez à jour public{basePath}/index.json</p>
+      {groups.order.map((k) => (
+        <div key={k} className="space-y-3">
+          {groups.m[k] && groups.m[k].length > 0 && (
+            <>
+              <h2 className="text-xl font-semibold">{groups.labels[k]}</h2>
+              <ul className="space-y-3">
+                {groups.m[k].map((f) => (
+                  <li key={f.path} className="card p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{f.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {f.description}
+                        {f.date ? ` · ${formatDate(f.date)}` : ''}
+                      </p>
+                    </div>
+                    <a className="text-blue-600 underline" href={f.path} target="_blank" rel="noreferrer" data-testid={`recherche-item-${f.title}`}>Ouvrir</a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      ))}
+      {(!items || items.length === 0) && (
+        <p className="text-gray-700">Ajoutez vos PDF dans public/recherche/ et mettez à jour public/recherche/index.json</p>
+      )}
+    </div>
+  );
+}
+
+function Projets() {
+  const { items, error } = useJsonList('/projets');
+  return (
+    <div className="space-y-6" data-testid="projets-page">
+      <h1 className="text-3xl font-bold">Projets</h1>
+      {error && (
+        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">Erreur de lecture: {error}</div>
+      )}
+      {(!items || items.length === 0) ? (
+        <p className="text-gray-700">Ajoutez vos PDF de projets dans public/projets/ et mettez à jour public/projets/index.json</p>
       ) : (
         <ul className="space-y-3">
-          {files.map((f) => (
+          {items.map((f) => (
             <li key={f.path} className="card p-4 flex items-center justify-between">
               <div>
                 <p className="font-medium">{f.title}</p>
-                <p className="text-sm text-gray-500">{f.description}</p>
+                <p className="text-sm text-gray-500">{f.description}{f.date ? ` · ${formatDate(f.date)}` : ''}</p>
               </div>
-              <a className="text-blue-600 underline" href={f.path} target="_blank" rel="noreferrer">Ouvrir</a>
+              <a className="text-blue-600 underline" href={f.path} target="_blank" rel="noreferrer" data-testid={`projet-item-${f.title}`}>Ouvrir</a>
             </li>
           ))}
         </ul>
@@ -184,8 +258,8 @@ export default function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/recherche" element={<ListFromJson title="Recherche" basePath="/recherche" />} />
-        <Route path="/projets" element={<ListFromJson title="Projets" basePath="/projets" />} />
+        <Route path="/recherche" element={<Recherche />} />
+        <Route path="/projets" element={<Projets />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/cv" element={<CV />} />
       </Routes>
